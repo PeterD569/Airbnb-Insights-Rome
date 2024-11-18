@@ -22,18 +22,52 @@ Key Features:
 - Interactive visualizations
   - box plots, scatterplots and pie charts using Plotly
   - heatmap to identify missing data patterns
+
  
 Data Source:
 The main data file is sourced from Inside Airbnb (https://insideairbnb.com), an open platform providing Airbnb data to empower communities with insights into Airbnb's impact on residential areas.
 The neighbourhood and central quarter area are geocoded using the latitude and longitude against neighbourhoods and central quarter areas in Rome as defined by open digital shapefiles, sourced from OpenStreetMap (https://www.openstreetmap.org).
 
+
 Tech Stack:
 Programming Language:
   - Python
+
 Libraries and Framework:
   - pandas, numpy: Data manipulation and analysis.
   - geopandas: Spatial Data integration.
   - plotly, matplotlib: Interactive and static visualizations.
   - scipy, statsmodels: Statistical computation and regression modeling.
   - sklearn: preprocessing and evaluation metrics
+
+
+Setup and Installation:
+  - Python 3.8 or higher
+  - Clone the repository
+  - Install required dependencies
+Input Files:
+  - listings.csv: Airbnb data file.
+  - neighbourhoods.geojson: GeoJSON file for neighbourhood boundaries in Rome
+  - Quarteri Roma.geoJSON: GeoJSON file for central quarters in Rome
+
+
+Insights and Results
+Key findings:
+
+
+Functions and Modules
+Preprocessing:
+  - assign_neighbourhoods: Adds a neighbourhood column using spatial data
+  - assign_quarter: Assigns listings in central areas to quarters
+Exploratory Analysis:
+  - plot_listings_with_filters: Generates interactive maps filtered by top hosts.
+Statistical Modeling:
+  - unified_model: Fits a regression model to predict prices using log-transformed price, location, host activity and review metrics
+
+
+Acknowledgments:
+  - Inside Airbnb: For providing the dataset used in this analysis
+  - Open-Source Libraries: For enabling advanced analysis and visualization.
+
+
 
