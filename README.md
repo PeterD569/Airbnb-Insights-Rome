@@ -30,6 +30,7 @@ The neighbourhood and central quarter area are geocoded using the latitude and l
 
 
 Tech Stack:
+
 Programming Language:
   - Python
 
@@ -44,7 +45,10 @@ Libraries and Framework:
 Setup and Installation:
   - Python 3.8 or higher
   - Clone the repository
-  - Install required dependencies
+  - Make sure the 3 seperate files with required functions are included ('NeighbourhoodGroups.py' 'MapCreation.py', 'RegressionModel.py')
+  - Install required dependencies (pip install -r requirements.txt)
+  - Run 'Main.py'
+
 Input Files:
   - listings.csv: Airbnb data file.
   - neighbourhoods.geojson: GeoJSON file for neighbourhood boundaries in Rome
