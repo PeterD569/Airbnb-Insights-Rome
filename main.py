@@ -388,6 +388,19 @@ fig_bar.show()
 # 6. This function creates an interactive map for all listings with filters for top 25 hosts and quarters within central area
 plot_listings_with_filters(df)
 
+#If you want to safe the figure or adjust parameters:
+"""plot_listings_with_filters(
+    df_cleaned_complete,
+    save_as_html=True,
+    html_file_path="Rome_Top_25_Hosts_Map.html")"""
+
+# To customize map center and zoom level
+"""plot_listings_with_filters(
+    df_cleaned_complete,
+    center_lat=41.9,
+    center_lon=12.5,
+    zoom=10)"""
+
 #   7. Number of reviews and average rating scores
 # Calculate review months and reviews per month
 df_cleaned_complete['review_months'] = (
@@ -433,7 +446,7 @@ print(f"\nOverall Average Reviews Per Month: {overall_avg_reviews_per_month:.2f}
 print("\nAverage Reviews Per Listing Per Month for Top 10 Hosts (Ordered by Total Listings):")
 print(top_10_hosts_avg_reviews)
 
-# --- Calculate Overall Average Review Scores ---
+# Calculate Overall Average Review Scores
 # List of individual review score columns
 review_columns = [
     'review_scores_rating', 'review_scores_accuracy', 'review_scores_cleanliness',
