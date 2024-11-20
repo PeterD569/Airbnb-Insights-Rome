@@ -1,17 +1,26 @@
-
 import pandas as pd
 import plotly.express as px
 
-def plot_listings_with_filters(df):
+def plot_listings_with_filters(df, center_lat=41.9, center_lon=12.6, zoom=8, save_as_html=False, html_file_path="top_hosts_map.html"):
     """
     Plot all Airbnb listings with filtering options for the top 25 hosts.
 
     Parameters:
         df (pd.DataFrame): DataFrame containing Airbnb listings with latitude, longitude, host_id, etc.
+        center_lat (float): Latitude for centering the map (default: 41.9 for Rome).
+        center_lon (float): Longitude for centering the map (default: 12.6 for Rome).
+        zoom (int): Initial zoom level for the map (default: 8).
+        save_as_html (bool): Whether to save the plot as an HTML file (default: False).
+        html_file_path (str): Path for saving the HTML file (default: "top_hosts_map.html").
 
     Returns:
         None
     """
+    # Validate required columns
+    required_columns = {'latitude', 'longitude', 'host_id', 'host_name', 'room_type', 'price'}
+    if not required_columns.issubset(df.columns):
+        raise ValueError(f"Input DataFrame must contain the following columns: {required_columns}")
+
     # Identify top 25 hosts by number of listings
     host_counts = df['host_id'].value_counts().nlargest(25)
     top_hosts = host_counts.index
@@ -30,7 +39,7 @@ def plot_listings_with_filters(df):
             'host_id': True, 'room_type': True, 'price': True
         },
         color='host_id',  # Color by host_id to differentiate top hosts
-        zoom=8,
+        zoom=zoom,
         height=600,
         opacity=0.75,
         color_discrete_sequence=px.colors.qualitative.Set2  # Use a distinct color palette
@@ -39,10 +48,10 @@ def plot_listings_with_filters(df):
     # Customize marker size to make dots more visible
     fig.update_traces(marker=dict(size=6))
 
-    # Set map style and center on Lazio, Italy
+    # Set map style and center on the specified location
     fig.update_layout(
         mapbox_style="open-street-map",
-        mapbox_center={"lat": 41.9, "lon": 12.6},
+        mapbox_center={"lat": center_lat, "lon": center_lon},
         title="Airbnb Listings with Filters for Top 25 Hosts",
         margin={"r": 0, "t": 0, "l": 0, "b": 0}
     )
@@ -64,8 +73,7 @@ def plot_listings_with_filters(df):
         dropdown_buttons.append({
             "label": f"Host: {host_name} ({host}) - {listing_count} Listings",
             "method": "update",
-            "args": [{"lat": [host_data['latitude']], "lon": [host_data['longitude']],
-                      "marker.color": [host_data['host_id']]}]
+            "args": [{"lat": host_data['latitude'], "lon": host_data['longitude'], "marker.color": host_data['host_id']}]
         })
 
     # Add dropdown menu to layout
@@ -85,10 +93,9 @@ def plot_listings_with_filters(df):
     # Show the figure
     fig.show()
 
-    # Prompt user to save as HTML
-    save_html = input("Do you want to save this map as an HTML file? (Yes or No): ").strip().lower()
-    if save_html == 'yes':
-        fig.write_html("top_hosts_map.html")
-        print("Map saved as 'top_hosts_map.html'.")
+    # Save as HTML if specified
+    if save_as_html:
+        fig.write_html(html_file_path)
+        print(f"Map saved as '{html_file_path}'.")
 
 
