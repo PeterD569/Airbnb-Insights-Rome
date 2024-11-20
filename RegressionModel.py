@@ -5,11 +5,26 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-
 def unified_model(df):
-    # Preprocessing and filtering
-    df = df[df['quarter'] != 'Unknown/NotCentralArea'].copy()  # Remove unknown quarters
-    df['log_price'] = np.log1p(df['price'])  # Log-transform the price
+    """
+    Perform regression analysis on an Airbnb dataset to predict log-transformed prices (log_price)
+    using numerical predictors, categorical variables (quarter, room_type with 'Private room' as baseline),
+    and the presence of top 20 amenities.
+
+    Parameters:
+        df (pd.DataFrame): Input dataset with preprocessed price, numerical predictors,
+                           categorical variables, and amenity indicators.
+
+    Outputs:
+        - Regression summary.
+        - Residual plots.
+        - Model performance metrics.
+    """
+    # Filter out rows with missing or non-central quarters
+    df = df[df['quarter'].notnull() & (df['quarter'] != 'Unknown/NotCentralArea')].copy()
+
+    # Log-transform the price
+    df['log_price'] = np.log1p(df['price'])
 
     # Define numerical predictors
     numerical_columns = [
@@ -19,45 +34,52 @@ def unified_model(df):
         'review_scores_location', 'review_scores_value'
     ]
 
+    # Include top 20 amenities as predictors
+    amenity_counts = df['amenities_list'].explode().value_counts()
+    top_20_amenities = amenity_counts.head(20).index
+    for amenity in top_20_amenities:
+        df[f'amenity_{amenity}'] = df['amenities_list'].apply(lambda x: amenity in x).astype(float)
+    top_20_amenity_columns = [f'amenity_{amenity}' for amenity in top_20_amenities]
+
     # Drop rows with missing values in numerical predictors
-    df_filtered = df.dropna(subset=numerical_columns).copy()
+    all_predictors = numerical_columns + top_20_amenity_columns
+    df_filtered = df.dropna(subset=all_predictors).copy()
 
     # Standardize numerical predictors
     scaler = StandardScaler()
     X_numerical_scaled = scaler.fit_transform(df_filtered[numerical_columns])
     X_numerical = pd.DataFrame(X_numerical_scaled, columns=numerical_columns, index=df_filtered.index)
 
-    # Handle quarters as categorical variable
+    # Include binary amenity columns as-is (already numeric)
+    X_amenities = df_filtered[top_20_amenity_columns]
+
+    # Handle quarter as a categorical variable
     cheapest_quarter = df_filtered.groupby('quarter')['price'].mean().idxmin()
     df_filtered['quarter'] = pd.Categorical(
         df_filtered['quarter'],
         categories=[cheapest_quarter] + [q for q in df_filtered['quarter'].unique() if q != cheapest_quarter],
         ordered=True
     )
-
-    # One-hot encode quarters
     quarter_dummies = pd.get_dummies(df_filtered['quarter'], prefix='quarter', drop_first=True)
-    quarter_dummies = quarter_dummies.astype(float)  # Ensure all dummies are numerical (float)
+    quarter_dummies = quarter_dummies.astype(float)  # Explicitly convert to float
 
-    # Combine numerical predictors and quarter dummies
-    X_combined = pd.concat([X_numerical, quarter_dummies], axis=1)
+    # Handle room_type as a categorical variable with 'Private room' as the baseline
+    df_filtered['room_type'] = pd.Categorical(df_filtered['room_type'], categories=['Private room', 'Entire home/apt', 'Hotel room', 'Shared room'])
+    room_type_dummies = pd.get_dummies(df_filtered['room_type'], prefix='room_type', drop_first=True)
+    room_type_dummies = room_type_dummies.astype(float)  # Explicitly convert to float
+
+    # Combine numerical predictors, amenity indicators, quarter dummies, and room type dummies
+    X_combined = pd.concat([X_numerical, X_amenities, quarter_dummies, room_type_dummies], axis=1)
     X_combined = sm.add_constant(X_combined)  # Add constant for intercept
 
     # Align dependent variable with the cleaned X_combined
     y = df_filtered.loc[X_combined.index, 'log_price']
 
-    # Check and handle missing or infinite values in X_combined
-    if X_combined.isnull().any().any():
-        print("Warning: Missing values detected in independent variables. Dropping rows with missing values.")
-        valid_index = X_combined.dropna().index
-        X_combined = X_combined.loc[valid_index]
-        y = y.loc[valid_index]  # Align dependent variable
-
-    if np.isinf(X_combined).any().any():
-        print("Warning: Infinite values detected in independent variables. Dropping rows with infinite values.")
-        valid_index = X_combined[~np.isinf(X_combined).any(axis=1)].index
-        X_combined = X_combined.loc[valid_index]
-        y = y.loc[valid_index]  # Align dependent variable
+    # Ensure all predictors are numerical
+    non_numeric_columns = X_combined.select_dtypes(exclude=np.number).columns
+    if not non_numeric_columns.empty:
+        print("Non-numerical columns detected:", non_numeric_columns)
+        raise ValueError("All predictor columns must be numerical.")
 
     # Fit OLS regression model
     model = sm.OLS(y, X_combined).fit()
