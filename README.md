@@ -55,10 +55,6 @@ Input Files:
   - Quarteri Roma.geoJSON: GeoJSON file for central quarters in Rome
 
 
-Insights and Results
-Key findings:
-
-
 Functions and Modules
 Preprocessing:
   - assign_neighbourhoods: Adds a neighbourhood column using spatial data
