@@ -216,21 +216,28 @@ fig_top_hosts.update_layout(title="Top 10 Hosts by Number of Listings", xaxis_ti
 fig_top_hosts.show()
 
 # 3. Total percentage of types of Rooms and Room Type Count for Top 10 hosts
-#Percentage of Types of Rooms (Pie Chart)
-room_type_counts = df_cleaned_basic['room_type'].value_counts(normalize=True).copy() * 100
 
-# Distribution of Room Types for Top 10 Hosts (Grouped Bar Chart with Host ID and Name)
+# Percentage of Types of Rooms (Pie Chart)
+room_type_counts = df_cleaned_basic['room_type'].value_counts(normalize=True) * 100
+
+# Top 10 Hosts by Listings
 top_hosts_data = df_cleaned_basic['host_id'].value_counts().nlargest(10).index
 top_hosts_info = (
-    df_cleaned_basic[df_cleaned_basic['host_id'].isin(top_hosts_data)].copy()
+    df_cleaned_basic[df_cleaned_basic['host_id'].isin(top_hosts_data)]
     .groupby(['host_id', 'host_name', 'room_type']).size().unstack(fill_value=0)
 )
 
-#Prepare labels that combine host_id and host_name
-top_hosts_info = top_hosts_info.rename(
-    index=lambda idx: f"{idx[0]} ({idx[1]})"
-)
+# Format host labels as "Host ID (Host Name)"
+top_hosts_info.index = [f"{idx[0]} ({idx[1]})" for idx in top_hosts_info.index]
 
+# Standardize columns
+all_room_types = ["Entire home/apt", "Private room", "Shared room", "Hotel room"]
+for col in all_room_types:
+    if col not in top_hosts_info.columns:
+        top_hosts_info[col] = 0
+top_hosts_info = top_hosts_info[all_room_types] 
+
+# Room Type Colors
 room_type_colors = {
     "Entire home/apt": "#1f77b4",  # Blue
     "Private room": "#ff7f0e",     # Orange
@@ -238,35 +245,45 @@ room_type_colors = {
     "Hotel room": "#d62728"       # Red
 }
 
-#Creating subplots
+# Creating subplots
 fig = make_subplots(
     rows=1, cols=2,
     specs=[[{'type': 'pie'}, {'type': 'bar'}]],
     subplot_titles=("Room Type Distribution", "Room Types for Top 10 Hosts"))
 
-#Add pie chart for Room Type Distribution
+# Add pie chart for Room Type Distribution
 fig.add_trace(
-    go.Pie(labels=room_type_counts.index, 
-           values=room_type_counts.values, 
-           hole=0.4, 
-           marker=dict(colors=[room_type_colors[room]for room in room_type_counts.index])),
-    row=1, col=1)
+    go.Pie(
+        labels=room_type_counts.index,
+        values=room_type_counts.values,
+        hole=0.4,
+        marker=dict(colors=[room_type_colors[room] for room in room_type_counts.index])
+    ),
+    row=1, col=1
+)
 
-#Add grouped bar chart for Room Types for Top 10 Hosts
-for room_type in top_hosts_info.columns:
+# Add grouped bar chart for Room Types for Top 10 Hosts
+for room_type in all_room_types:
     fig.add_trace(
         go.Bar(
             x=top_hosts_info.index,
             y=top_hosts_info[room_type],
-            name=room_type, marker_color=room_type_colors[room_type]),
-        row=1, col=2)
+            name=room_type,
+            marker_color=room_type_colors[room_type]
+        ),
+        row=1, col=2
+    )
 
+# Update layout for clarity
 fig.update_layout(
     title="Room Type Analysis",
-    barmode='group',  # Grouped bars to avoid overlap
-    legend_title="Room Type",)
+    barmode='group',  # Grouped bars for better comparison
+    legend_title="Room Type"
+)
 fig.update_xaxes(title_text="Host ID (Host Name)", row=1, col=2)
 fig.update_yaxes(title_text="Number of Listings", row=1, col=2)
+
+# Display plot
 fig.show()
 
 # 4. Listings Count per Neighborhood and Count of Listings per Neighbourhood for top 10 Hosts
@@ -327,7 +344,7 @@ fig_bar.update_layout(
 
 fig_pie.show()
 fig_bar.show()
-
+  
 # 5. Listings Count per Quarter and Count of Listings per Neighbourhood for top 10 Hosts
 # Listings Count per Quarter
 quarter_counts = df_cleaned_basic['quarter'].value_counts().reset_index().copy()
@@ -406,6 +423,11 @@ plot_listings_with_filters(df)
 df_cleaned_complete['review_months'] = (
     (df_cleaned_complete['last_review'] - df_cleaned_complete['first_review']).dt.days / 30.44
 )
+
+# Replace zero or negative months with a small positive value to avoid division errors
+df_cleaned_complete['review_months'] = df_cleaned_complete['review_months'].apply(lambda x: x if x > 0 else 0.01)
+
+# Calculate reviews per month
 df_cleaned_complete['reviews_per_month_calculated'] = (
     df_cleaned_complete['number_of_reviews'] / df_cleaned_complete['review_months']
 )
